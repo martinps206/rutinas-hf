@@ -62,18 +62,15 @@ Modificaciones de ejercicios: ${mods || "Ninguna"}
 Nota motivacional: ${note || "Ninguna"}`;
 
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
+      const API_URL = import.meta.env.DEV ? "http://localhost:8787/api/generate" : "/api/generate";
+      const res = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          system: SYSTEM_PROMPT,
-          messages: [{ role: "user", content: userPrompt }],
-        }),
+        body: JSON.stringify({ name: name.trim(), level, days, goals, mods, note }),
       });
-      const data = await res.json();
-      const text = data.content?.map((b) => b.text || "").join("") || "";
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Error en la generación");
+      const text = data.text || "";
       if (!text) throw new Error("Respuesta vacía");
       setOutput(text);
       setHistory((h) => [{ name: name.trim(), level, text }, ...h].slice(0, 6));
